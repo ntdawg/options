@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cash-Secured Put Analyzer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f3;
+      color: #1a1a18;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .page {
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 1.75rem;
+    }
+
+    .card {
+      background: #fff;
+      border: 0.5px solid rgba(0,0,0,0.12);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .setup-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 1.25rem;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .field-label {
+      font-size: 11px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="date"] {
+      height: 36px;
+      border: 0.5px solid rgba(0,0,0,0.2);
+      border-radius: 8px;
+      padding: 0 10px;
+      font-size: 13px;
+      font-family: inherit;
+      color: #1a1a18;
+      background: #fff;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus { border-color: rgba(0,0,0,0.4); }
+
+    .section-divider {
+      font-size: 11px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 1rem 0 0.5rem;
+    }
+
+    .tags-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 0.6rem;
+      min-height: 28px;
+      align-items: center;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #f5f5f3;
+      border: 0.5px solid rgba(0,0,0,0.15);
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .tag-remove {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #aaa;
+      font-size: 16px;
+      line-height: 1;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      font-family: inherit;
+    }
+
+    .tag-remove:hover { color: #c0392b; }
+
+    .add-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .add-row input[type="number"],
+    .add-row input[type="date"] {
+      width: 150px;
+    }
+
+    button.add-btn {
+      height: 36px;
+      padding: 0 14px;
+      border: 0.5px solid rgba(0,0,0,0.2);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      color: #1a1a18;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: background 0.1s;
+    }
+
+    button.add-btn:hover { background: #f0f0ee; }
+    button.add-btn:active { transform: scale(0.98); }
+
+    .empty-note {
+      font-size: 13px;
+      color: #bbb;
+    }
+
+    .results { margin-top: 0.5rem; }
+
+    .exp-header {
+      font-size: 14px;
+      font-weight: 500;
+      margin: 1.5rem 0 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .days-chip {
+      font-size: 11px;
+      color: #888;
+      font-weight: 400;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      table-layout: fixed;
+    }
+
+    thead th {
+      font-size: 11px;
+      color: #888;
+      font-weight: 500;
+      text-align: left;
+      padding: 5px 8px;
+      border-bottom: 0.5px solid rgba(0,0,0,0.1);
+    }
+
+    tbody tr {
+      border-bottom: 0.5px solid rgba(0,0,0,0.07);
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+
+    tbody td {
+      padding: 8px;
+      vertical-align: middle;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    input.bid-in {
+      width: 80px;
+      text-align: center;
+      font-size: 13px;
+      height: 30px;
+    }
+
+    .itm-badge {
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: #fff3cd;
+      color: #7a5c00;
+      margin-left: 4px;
+    }
+
+    .best-row td { background: #eaf3fb; }
+
+    .best-badge {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #e6f1fb;
+      color: #185fa5;
+      border: 0.5px solid #b5d4f4;
+      white-space: nowrap;
+    }
+
+    .ann-val { color: #185fa5; font-weight: 500; }
+
+    .empty-state {
+      font-size: 13px;
+      color: #bbb;
+      padding: 2rem 0;
+      text-align: center;
+    }
+
+    .today-note {
+      font-size: 11px;
+      color: #aaa;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 520px) {
+      thead th:nth-child(2), tbody td:nth-child(2) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+  <h1>Cash-secured put analyzer</h1>
+  <p class="subtitle">Enter any ticker, stock price, strike prices, expiry dates, and option bids to calculate base and annualized returns.</p>
+
+  <div class="card">
+    <div class="setup-grid">
+      <div class="field-group">
+        <span class="field-label">Ticker</span>
+        <input type="text" id="ticker" placeholder="e.g. SOFI" maxlength="8" style="font-size:15px; font-weight:500; text-transform:uppercase;" />
+      </div>
+      <div class="field-group">
+        <span class="field-label">Stock price ($)</span>
+        <input type="number" id="stock-price" placeholder="e.g. 15.61" min="0" step="0.01" />
+      </div>
+      <div class="field-group">
+        <span class="field-label">Today's date</span>
+        <input type="date" id="today-date" />
+        <span class="today-note" id="today-note"></span>
+      </div>
+    </div>
+
+    <div class="section-divider">Strike prices</div>
+    <div class="tags-row" id="strikes-row"><span class="empty-note">No strikes added yet</span></div>
+    <div class="add-row">
+      <input type="number" id="new-strike" placeholder="Strike price $" min="0" step="0.5" />
+      <button class="add-btn" onclick="addStrike()">+ Add strike</button>
+    </div>
+
+    <div class="section-divider" style="margin-top:1.25rem;">Expiry dates</div>
+    <div class="tags-row" id="expiry-row"><span class="empty-note">No expiry dates added yet</span></div>
+    <div class="add-row">
+      <input type="date" id="new-expiry" />
+      <button class="add-btn" onclick="addExpiry()">+ Add expiry</button>
+    </div>
+  </div>
+
+  <div class="results" id="results">
+    <div class="empty-state">Add strikes and expiry dates above to see return analysis.</div>
+  </div>
+</div>
+
+<script>
+  const todayInput = document.getElementById('today-date');
+  const todayNote = document.getElementById('today-note');
+
+  function getTodayISO() {
+    const d = new Date();
+    return d.toISOString().slice(0, 10);
+  }
+
+  function formatDisplay(iso) {
+    const [y, m, d] = iso.split('-').map(Number);
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${months[m-1]} ${d}, ${y}`;
+  }
+
+  const autoToday = getTodayISO();
+  todayInput.value = autoToday;
+  todayNote.textContent = 'Auto-set to today';
+  todayInput.addEventListener('change', () => { todayNote.textContent = ''; render(); });
+
+  let strikes = [];
+  let expiries = [];
+  const premiums = {};
+
+  document.getElementById('ticker').addEventListener('input', render);
+  document.getElementById('stock-price').addEventListener('input', render);
+  document.getElementById('new-strike').addEventListener('keydown', e => { if (e.key === 'Enter') addStrike(); });
+  document.getElementById('new-expiry').addEventListener('keydown', e => { if (e.key === 'Enter') addExpiry(); });
+
+  function addStrike() {
+    const val = parseFloat(document.getElementById('new-strike').value);
+    if (!val || val <= 0 || strikes.includes(val)) return;
+    strikes.push(val);
+    strikes.sort((a, b) => a - b);
+    document.getElementById('new-strike').value = '';
+    renderSetup();
+    render();
+  }
+
+  function removeStrike(s) {
+    strikes = strikes.filter(x => x !== s);
+    renderSetup();
+    render();
+  }
+
+  function addExpiry() {
+    const val = document.getElementById('new-expiry').value;
+    if (!val || expiries.includes(val)) return;
+    expiries.push(val);
+    expiries.sort();
+    document.getElementById('new-expiry').value = '';
+    renderSetup();
+    render();
+  }
+
+  function removeExpiry(e) {
+    expiries = expiries.filter(x => x !== e);
+    renderSetup();
+    render();
+  }
+
+  function renderSetup() {
+    const sr = document.getElementById('strikes-row');
+    sr.innerHTML = strikes.length === 0
+      ? '<span class="empty-note">No strikes added yet</span>'
+      : strikes.map(s => `<span class="tag">$${s}<button class="tag-remove" onclick="removeStrike(${s})" aria-label="Remove $${s}">&#x2715;</button></span>`).join('');
+
+    const er = document.getElementById('expiry-row');
+    er.innerHTML = expiries.length === 0
+      ? '<span class="empty-note">No expiry dates added yet</span>'
+      : expiries.map(e => `<span class="tag">${formatDisplay(e)}<button class="tag-remove" onclick="removeExpiry('${e}')" aria-label="Remove ${e}">&#x2715;</button></span>`).join('');
+  }
+
+  function daysTo(expiryIso) {
+    const todayIso = todayInput.value || autoToday;
+    const t = new Date(todayIso + 'T00:00:00');
+    const ex = new Date(expiryIso + 'T00:00:00');
+    return Math.round((ex - t) / 86400000);
+  }
+
+  function calcReturns(premium, strike, days) {
+    if (!premium || isNaN(premium) || premium <= 0 || days <= 0) return { base: null, ann: null };
+    const base = premium / (strike * 100);
+    const ann = base * (365 / days);
+    return { base, ann };
+  }
+
+  function getBestKey() {
+    let best = -Infinity, bestKey = null;
+    expiries.forEach(e => {
+      const days = daysTo(e);
+      strikes.forEach(s => {
+        const key = e + '_' + s;
+        const val = parseFloat(premiums[key] || '');
+        const r = calcReturns(val, s, days);
+        if (r.ann !== null && r.ann > best) { best = r.ann; bestKey = key; }
+      });
+    });
+    return bestKey;
+  }
+
+  function render() {
+    const stockPrice = parseFloat(document.getElementById('stock-price').value);
+    const container = document.getElementById('results');
+
+    if (strikes.length === 0 || expiries.length === 0) {
+      container.innerHTML = '<div class="empty-state">Add strike prices and expiry dates above to see return analysis.</div>';
+      return;
+    }
+
+    const bestKey = getBestKey();
+    let html = '';
+
+    expiries.forEach(e => {
+      const days = daysTo(e);
+      if (days < 0) return;
+
+      html += `<div class="exp-header">${formatDisplay(e)} <span class="days-chip">${days} days to expiry</span></div>`;
+      html += `<div class="card" style="padding:0; overflow:hidden;">
+        <table>
+          <thead><tr>
+            <th style="width:22%">Strike</th>
+            <th style="width:18%">vs stock</th>
+            <th style="width:20%">Bid (contract $)</th>
+            <th style="width:18%">Base return</th>
+            <th style="width:14%">Annualized</th>
+            <th style="width:8%"></th>
+          </tr></thead>
+          <tbody>`;
+
+      strikes.forEach(s => {
+        const key = e + '_' + s;
+        const val = parseFloat(premiums[key] || '');
+        const r = calcReturns(val, s, days);
+        const isBest = key === bestKey && r.ann !== null;
+        const itm = !isNaN(stockPrice) && stockPrice > 0 && s >= stockPrice;
+        const distLabel = !isNaN(stockPrice) && stockPrice > 0
+          ? (itm ? 'ITM' : ((stockPrice - s) / stockPrice * 100).toFixed(1) + '% OTM')
+          : '—';
+
+        html += `<tr class="${isBest ? 'best-row' : ''}">
+          <td style="font-weight:500">$${s}${itm ? '<span class="itm-badge">ITM</span>' : ''}</td>
+          <td style="font-size:12px;color:#888">${distLabel}</td>
+          <td><input type="number" class="bid-in" min="0" step="0.01" placeholder="0.00" value="${premiums[key] || ''}" data-key="${key}" /></td>
+          <td>${r.base !== null ? (r.base * 100).toFixed(2) + '%' : '—'}</td>
+          <td class="${r.ann !== null ? 'ann-val' : ''}">${r.ann !== null ? (r.ann * 100).toFixed(1) + '%' : '—'}</td>
+          <td>${isBest ? '<span class="best-badge">best</span>' : ''}</td>
+        </tr>`;
+      });
+
+      html += `</tbody></table></div>`;
+    });
+
+    container.innerHTML = html || '<div class="empty-state">No valid expiry dates — all may be in the past.</div>';
+
+    container.querySelectorAll('input.bid-in').forEach(inp => {
+      inp.addEventListener('input', function() {
+        premiums[this.dataset.key] = this.value;
+        render();
+      });
+    });
+  }
+
+  renderSetup();
+  render();
+</script>
+</body>
+</html>
